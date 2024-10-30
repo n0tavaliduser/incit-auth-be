@@ -12,7 +12,10 @@
     "migrate:rollback": "knex migrate:rollback",
     "migrate:rollback:all": "knex migrate:rollback --all",
     "migrate:reset": "knex migrate:reset",
-    "migrate:status": "knex migrate:status"
+    "migrate:status": "knex migrate:status",
+    "seed:make": "knex seed:make -x ts",
+    "seed:run": "ts-node -T ./node_modules/.bin/knex seed:run",
+    "db:refresh": "ts-node ./node_modules/.bin/knex migrate:rollback --all && ts-node ./node_modules/.bin/knex migrate:latest && ts-node ./node_modules/.bin/knex seed:run"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -39,6 +42,7 @@
     "@types/passport-local": "^1.0.35",
     "nodemon": "^2.0.22",
     "ts-node": "^10.9.1",
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "@types/knex": "^0.16.1"
   }
 } 

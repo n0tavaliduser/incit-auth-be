@@ -6,6 +6,7 @@
 # environment variables
 .env
 .env.*
+!.env.example
 
 # logs
 logs
@@ -33,4 +34,8 @@ Thumbs.db
 
 # Temporary files
 *.tmp
-*.temp 
+*.temp
+
+# Seeder generated files
+database/seeders/*.js
+!database/seeders/UserSeeder.ts 

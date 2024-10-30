@@ -16,6 +16,10 @@ Backend service for authentication system built with Express.js, TypeScript, and
 npm install
 ```
 
+## Database Management
+
+### Migrations
+
 ## Available Scripts
 
 - `npm run dev` - Start development server with hot-reload
@@ -83,11 +87,40 @@ npm run migrate:status
 npm run migrate:reset
 ```
 
+**Create new migration**
 
-## Development Guidelines
+```bash
+npm run migrate:make migration_name
+```
 
-1. Always create a new migration for database changes
-2. Test migrations both up and down
-3. Use meaningful migration names (e.g., create_users_table, add_user_role_column)
-4. Keep migrations idempotent when possible
-5. Add appropriate indexes for frequently queried columns
+**Run migrations**
+
+```bash
+npm run migrate:latest
+```
+
+**Rollback migrations**
+
+```bash
+npm run migrate:rollback
+```
+
+## Seeder
+
+**Create new seeder**
+
+```bash
+npm run seed:make seeder_name
+```
+
+**Run all seeders**
+
+```bash
+npm run seed:run
+```
+
+**Refresh database (rollback all migrations, migrate, and seed)**
+
+```bash
+npm run db:refresh
+```

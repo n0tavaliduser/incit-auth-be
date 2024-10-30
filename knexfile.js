@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('ts-node/register');
 
 module.exports = {
   development: {
@@ -12,14 +13,24 @@ module.exports = {
       charset: 'utf8mb4'
     },
     migrations: {
-      directory: './database/migrations'
+      directory: './database/migrations',
+      extension: 'ts'
+    },
+    seeds: {
+      directory: './database/seeders',
+      extension: 'ts'
     }
   },
   production: {
     client: 'mysql2',
     connection: process.env.DATABASE_URL,
     migrations: {
-      directory: './database/migrations'
+      directory: './database/migrations',
+      extension: 'ts'
+    },
+    seeds: {
+      directory: './database/seeders',
+      extension: 'ts'
     }
   }
 }; 
