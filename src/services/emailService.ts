@@ -1,23 +1,9 @@
 import nodemailer from 'nodemailer';
-import { User } from '../types/user';
+import { UserEmailData } from '../types/user';
 
-export class EmailService {
-  private transporter: nodemailer.Transporter;
-
-  constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-  }
-
-  async sendVerificationEmail(user: User, verificationToken: string): Promise<void> {
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+export const emailService = {
+  sendVerificationEmail: async (user: UserEmailData, token: string) => {
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${token}`;
 
     const mailOptions = {
       from: process.env.SMTP_FROM,
@@ -38,8 +24,14 @@ export class EmailService {
       `,
     };
 
-    await this.transporter.sendMail(mailOptions);
+    await nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    }).sendMail(mailOptions);
   }
-}
-
-export const emailService = new EmailService();
+};

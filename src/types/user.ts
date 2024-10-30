@@ -2,8 +2,17 @@ export interface User {
   id: number;
   email: string;
   name: string;
-  email_verified?: boolean;
-  oauth_provider?: string;
-  verification_token?: string | null;
-  verification_token_expires_at?: Date | null;
+  password: string;
+  email_verified: boolean;
+  verification_token?: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// Interface untuk data yang dikirim ke email service
+export interface UserEmailData {
+  id: number;
+  email: string;
+  name: string;
+  email_verified: boolean;
 } 
