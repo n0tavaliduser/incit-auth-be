@@ -313,6 +313,13 @@ export const verifyToken = async (req: AuthRequest, res: Response) => {
     const user = users[0];
     const isVerified = Boolean(user.email_verified);
 
+    if (!isVerified) {
+      await pool.execute<ResultSetHeader>(
+        'UPDATE users SET email_verified = true WHERE id = ?',
+        [userId]
+      );
+    }
+
     res.json({ 
       user: {
         id: user.id,
