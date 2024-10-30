@@ -1,5 +1,4 @@
 require('dotenv').config();
-require('ts-node/register');
 
 module.exports = {
   development: {
@@ -14,11 +13,11 @@ module.exports = {
     },
     migrations: {
       directory: './database/migrations',
-      extension: 'ts'
+      extension: 'js'
     },
     seeds: {
       directory: './database/seeders',
-      extension: 'ts'
+      extension: 'js'
     }
   },
   production: {
@@ -26,11 +25,11 @@ module.exports = {
     connection: process.env.DATABASE_URL,
     migrations: {
       directory: './database/migrations',
-      extension: 'ts'
+      extension: 'js'
     },
     seeds: {
       directory: './database/seeders',
-      extension: 'ts'
+      extension: 'js'
     }
   }
 }; 

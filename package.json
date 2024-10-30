@@ -13,11 +13,12 @@
     "migrate:rollback:all": "knex migrate:rollback --all",
     "migrate:reset": "knex migrate:reset",
     "migrate:status": "knex migrate:status",
-    "seed:make": "knex seed:make -x ts",
-    "seed:run": "ts-node -T ./node_modules/.bin/knex seed:run",
+    "seed:make": "knex seed:make",
+    "seed:run": "knex seed:run",
     "db:refresh": "ts-node ./node_modules/.bin/knex migrate:rollback --all && ts-node ./node_modules/.bin/knex migrate:latest && ts-node ./node_modules/.bin/knex seed:run"
   },
   "dependencies": {
+    "@types/nodemailer": "^6.4.16",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
@@ -27,6 +28,7 @@
     "knex": "^2.4.2",
     "moment-timezone": "^0.5.46",
     "mysql2": "^3.6.5",
+    "nodemailer": "^6.9.16",
     "passport": "^0.6.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-local": "^1.0.0"

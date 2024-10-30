@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 
-export const validatePassword = (req: Request, res: Response, next: NextFunction) => {
+export const validatePassword = (req: Request, res: Response, next: NextFunction): void => {
   const { password } = req.body;
 
   if (!password) {
-    return res.status(400).json({ message: 'Password is required' });
+    res.status(400).json({ message: 'Password is required' });
+    return;
   }
 
   const hasLower = /[a-z]/.test(password);
@@ -14,7 +15,7 @@ export const validatePassword = (req: Request, res: Response, next: NextFunction
   const hasLength = password.length >= 8;
 
   if (!hasLower || !hasUpper || !hasDigit || !hasSpecial || !hasLength) {
-    return res.status(400).json({
+    res.status(400).json({
       message: 'Password does not meet requirements',
       validation: {
         hasLower,
@@ -24,7 +25,9 @@ export const validatePassword = (req: Request, res: Response, next: NextFunction
         hasLength
       }
     });
+    return;
   }
 
   next();
+  return;
 }; 

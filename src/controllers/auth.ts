@@ -1,38 +1,145 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import pool from '../config/database';
-import { User } from '../types/database';
-import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import crypto from 'crypto';
 import { AuthRequest } from '../middleware/auth';
+import pool from '../config/database';
+import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import { emailService } from '../services/emailService';
 
-export async function register(req: Request, res: Response) {
+interface UserRow extends RowDataPacket {
+  id: number;
+  email: string;
+  name: string;
+  password: string;
+  email_verified: boolean;
+  verification_token: string | null;
+  verification_token_expires_at: Date | null;
+  oauth_provider?: string;
+}
+
+/**
+ * Generates a random token for email verification
+ */
+const generateVerificationToken = (): string => {
+  return crypto.randomBytes(32).toString('hex');
+};
+
+/**
+ * Handles user registration
+ */
+export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, name } = req.body;
-
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+    const verificationToken = generateVerificationToken();
+    const tokenExpires = new Date();
+    tokenExpires.setHours(tokenExpires.getHours() + 24); // Token expires in 24 hours
 
-    // Insert user into database
     const [result] = await pool.execute<ResultSetHeader>(
-      'INSERT INTO users (email, password, name) VALUES (?, ?, ?)',
-      [email, hashedPassword, name]
+      `INSERT INTO users (email, password, name, verification_token, verification_token_expires_at) 
+       VALUES (?, ?, ?, ?, ?)`,
+      [email, hashedPassword, name, verificationToken, tokenExpires]
     );
 
-    res.status(201).json({ message: 'User registered successfully' });
+    const user = {
+      id: result.insertId,
+      email,
+      name,
+    };
+
+    await emailService.sendVerificationEmail(user, verificationToken);
+
+    res.status(201).json({ 
+      message: 'Registration successful. Please check your email to verify your account.',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        email_verified: false
+      }
+    });
+    return;
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ message: 'Error registering user' });
+    return;
   }
-}
+};
 
-export async function login(req: Request, res: Response) {
+/**
+ * Handles email verification
+ */
+export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.params;
+    const [users] = await pool.execute<UserRow[]>(
+      `SELECT * FROM users WHERE verification_token = ? AND verification_token_expires_at > NOW()`,
+      [token]
+    );
+
+    if (!users.length) {
+      res.status(400).json({ message: 'Invalid or expired verification token' });
+      return;
+    }
+
+    const user = users[0];
+
+    await pool.execute<ResultSetHeader>(
+      `UPDATE users SET email_verified = true, verification_token = NULL, 
+       verification_token_expires_at = NULL WHERE id = ?`,
+      [user.id]
+    );
+
+    res.json({ message: 'Email verified successfully' });
+    return;
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ message: 'Error verifying email' });
+    return;
+  }
+};
+
+/**
+ * Handles resending verification email
+ */
+export const resendVerification = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user.id;
+    const verificationToken = generateVerificationToken();
+    const tokenExpires = new Date();
+    tokenExpires.setHours(tokenExpires.getHours() + 24);
+
+    await pool.execute<ResultSetHeader>(
+      `UPDATE users SET verification_token = ?, verification_token_expires_at = ? 
+       WHERE id = ?`,
+      [verificationToken, tokenExpires, userId]
+    );
+
+    const [users] = await pool.execute<UserRow[]>(
+      'SELECT * FROM users WHERE id = ?', 
+      [userId]
+    );
+    const user = users[0];
+
+    await emailService.sendVerificationEmail(user, verificationToken);
+
+    res.json({ message: 'Verification email sent successfully' });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ message: 'Error sending verification email' });
+  }
+};
+
+/**
+ * Handles user login
+ */
+export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
-    // Find user
-    const [users] = await pool.execute<(User & RowDataPacket)[]>(
+    const [users] = await pool.execute<UserRow[]>(
       'SELECT * FROM users WHERE email = ?',
       [email]
     );
@@ -40,16 +147,16 @@ export async function login(req: Request, res: Response) {
     const user = users[0];
 
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      res.status(401).json({ message: 'Invalid credentials' });
+      return;
     }
 
-    // Check password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      res.status(401).json({ message: 'Invalid credentials' });
+      return;
     }
 
-    // Generate JWT
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -57,28 +164,38 @@ export async function login(req: Request, res: Response) {
     );
 
     res.json({
+      success: true,
       token,
       user: {
         id: user.id,
         email: user.email,
-        name: user.name
+        name: user.name,
+        email_verified: user.email_verified,
+        oauth_provider: user.oauth_provider
       }
     });
+    return;
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Error logging in' });
+    res.status(500).json({ 
+      success: false,
+      message: 'Error logging in' 
+    });
+    return;
   }
-}
+};
 
-export const logout = async (req: Request, res: Response) => {
+export const logout = async (_req: Request, res: Response): Promise<void> => {
   try {
     res.json({ 
       success: true,
       message: 'Logged out successfully' 
     });
+    return;
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ message: 'Error during logout' });
+    return;
   }
 };
 
