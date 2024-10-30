@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import pool from '../config/database';
 import { User } from '../types/database';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { AuthRequest } from '../middleware/auth';
 
 export async function register(req: Request, res: Response) {
   try {
@@ -73,4 +74,22 @@ export async function logout(req: Request, res: Response) {
   req.logout(() => {
     res.json({ message: 'Logged out successfully' });
   });
-} 
+}
+
+export const verifyToken = async (req: AuthRequest, res: Response) => {
+  try {
+    // If middleware passed, token is valid
+    // Return user data
+    const user = req.user;
+    res.json({ 
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name
+      }
+    });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    res.status(401).json({ message: 'Invalid token' });
+  }
+}; 
