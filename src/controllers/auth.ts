@@ -70,16 +70,20 @@ export async function login(req: Request, res: Response) {
   }
 }
 
-export async function logout(req: Request, res: Response) {
-  req.logout(() => {
-    res.json({ message: 'Logged out successfully' });
-  });
-}
+export const logout = async (req: Request, res: Response) => {
+  try {
+    res.json({ 
+      success: true,
+      message: 'Logged out successfully' 
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ message: 'Error during logout' });
+  }
+};
 
 export const verifyToken = async (req: AuthRequest, res: Response) => {
   try {
-    // If middleware passed, token is valid
-    // Return user data
     const user = req.user;
     res.json({ 
       user: {
