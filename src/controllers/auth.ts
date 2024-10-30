@@ -13,7 +13,7 @@ interface UserRow extends RowDataPacket {
   email: string;
   name: string;
   password: string;
-  email_verified: boolean;
+  email_verified: number;
   verification_token: string | null;
   verification_token_expires_at: Date | null;
   oauth_provider?: string;
@@ -153,11 +153,13 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
     const updatedUser = updatedUsers[0];
     console.log('Updated user:', updatedUser);
 
+    const isVerified = Boolean(updatedUser.email_verified);
+
     const newToken = jwt.sign(
       { 
         id: updatedUser.id, 
         email: updatedUser.email,
-        email_verified: updatedUser.email_verified
+        email_verified: isVerified
       },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
@@ -171,7 +173,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
         id: updatedUser.id,
         email: updatedUser.email,
         name: updatedUser.name,
-        email_verified: updatedUser.email_verified
+        email_verified: isVerified
       }
     });
     return;
@@ -212,7 +214,7 @@ export const resendVerification = async (req: AuthRequest, res: Response) => {
       id: user.id,
       email: user.email,
       name: user.name,
-      email_verified: user.email_verified
+      email_verified: Boolean(user.email_verified)
     };
 
     await emailService.sendVerificationEmail(userForEmail, verificationToken);
@@ -249,6 +251,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const isVerified = Boolean(user.email_verified);
+
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -262,7 +266,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         id: user.id,
         email: user.email,
         name: user.name,
-        email_verified: user.email_verified,
+        email_verified: isVerified,
         oauth_provider: user.oauth_provider
       }
     });
@@ -293,16 +297,67 @@ export const logout = async (_req: Request, res: Response): Promise<void> => {
 
 export const verifyToken = async (req: AuthRequest, res: Response) => {
   try {
-    const user = req.user;
+    const userId = req.user.id;
+    
+    // Ambil data user lengkap dari database
+    const [users] = await pool.execute<UserRow[]>(
+      'SELECT * FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (!users.length) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    const user = users[0];
+    const isVerified = Boolean(user.email_verified);
+
     res.json({ 
       user: {
         id: user.id,
         email: user.email,
-        name: user.name
+        name: user.name,
+        email_verified: isVerified
       }
     });
   } catch (error) {
     console.error('Token verification error:', error);
     res.status(401).json({ message: 'Invalid token' });
+  }
+};
+
+// Tambahkan fungsi baru
+export const checkVerification = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user.id;
+    
+    const [users] = await pool.execute<UserRow[]>(
+      'SELECT * FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (!users.length) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    const user = users[0];
+
+    const isVerified = Boolean(user.email_verified);
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        email_verified: isVerified
+      }
+    });
+    return;
+  } catch (error) {
+    console.error('Check verification error:', error);
+    res.status(500).json({ message: 'Error checking verification status' });
+    return;
   }
 }; 
