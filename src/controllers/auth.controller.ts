@@ -8,8 +8,6 @@ import { sendVerificationEmail } from '../utils/email';
 import bcrypt from 'bcrypt';
 import { AuthRequest } from '../types/auth';
 
-const client = new OAuth2Client(config.google.clientId);
-
 export class AuthController {
   async register(req: Request, res: Response) {
     try {
@@ -38,7 +36,9 @@ export class AuthController {
         user: {
           id: user.id,
           name: user.name,
-          email: user.email
+          email: user.email,
+          email_verified: user.email_verified,
+          provider: user.provider
         }
       });
     } catch (error) {
@@ -69,7 +69,9 @@ export class AuthController {
         user: {
           id: user.id,
           name: user.name,
-          email: user.email
+          email: user.email,
+          email_verified: user.email_verified,
+          provider: user.provider
         }
       });
     } catch (error) {
@@ -203,15 +205,26 @@ export class AuthController {
     try {
       const { token } = req.params;
       const decoded = verifyToken(token);
-      
-      const user = await User.findOne({ where: { id: decoded.id } });
+      const user = await User.findOne({ where: { email: decoded.email } });
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
 
       await user.update({ email_verified: true });
 
-      return res.json({ message: 'Email verified successfully' });
+      // Generate new token and return with user data
+      const newToken = generateToken(user);
+      return res.json({ 
+        message: 'Email verified successfully',
+        token: newToken,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          email_verified: true,
+          provider: user.provider
+        }
+      });
     } catch (error) {
       console.error('Email verification error:', error);
       return res.status(400).json({ error: 'Invalid or expired verification token' });
