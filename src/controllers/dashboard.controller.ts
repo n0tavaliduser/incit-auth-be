@@ -4,7 +4,7 @@ import moment from 'moment-timezone';
 
 export const getDashboardData = async (req: AuthRequest, res: Response) => {
   try {
-    const timezone = process.env.TIMEZONE || 'Asia/Jakarta';
+    const timezone = process.env.APP_TIMEZONE || 'Asia/Jakarta';
     const currentHour = moment().tz(timezone).hour();
     
     let greeting = '';

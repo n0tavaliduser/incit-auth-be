@@ -4,8 +4,8 @@ dotenv.config();
 export const config = {
   app: {
     name: process.env.APP_NAME || 'incit-auth-be',
-    port: parseInt(process.env.PORT || '3001', 10),
-    timezone: process.env.TIMEZONE || 'Asia/Jakarta'
+    port: parseInt(process.env.APP_PORT || '3001', 10),
+    timezone: process.env.APP_TIMEZONE || 'Asia/Jakarta'
   },
   database: {
     driver: process.env.DB_DRIVER || 'mysql2',
@@ -36,6 +36,6 @@ export const config = {
     from: process.env.SMTP_FROM
   },
   frontend: {
-    url: process.env.FRONTEND_URL || 'http://localhost:5173'
+    url: process.env.FRONTEND_URL || 'http://localhost:3000'
   }
 }; 
