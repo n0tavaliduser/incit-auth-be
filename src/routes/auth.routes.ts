@@ -1,18 +1,76 @@
-import express, { RequestHandler } from 'express';
+import express, { Request, Response, NextFunction, RequestHandler } from 'express';
 import { AuthController } from '../controllers/auth.controller';
 import { authMiddleware } from '../middleware/auth';
+import { validatePassword } from '../middleware/passwordValidation';
+import { AuthRequest } from '../types/auth';
 
 const router = express.Router();
 const authController = new AuthController();
 
-// Public routes
-router.post('/register', authController.register);
-router.post('/login', authController.login);
-router.post('/google', authController.googleAuth);
-router.post('/facebook', authController.facebookAuth);
+// Updated type assertion helper
+const handleAuth = (
+  fn: (req: AuthRequest, res: Response) => Promise<any>
+): RequestHandler => 
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as unknown as AuthRequest;
+      await fn(authReq, res);
+    } catch (error) {
+      next(error);
+    }
+  };
 
-// Protected routes
-router.post('/logout', authMiddleware as RequestHandler, authController.logout as RequestHandler);
-router.get('/validate', authMiddleware as RequestHandler, authController.validateToken as RequestHandler);
+// Basic auth routes
+router.post('/register', validatePassword, authController.register as RequestHandler);
+router.post('/login', authController.login as RequestHandler);
+router.post('/logout', authController.logout as RequestHandler);
+router.get('/validate', 
+  authMiddleware as RequestHandler,
+  handleAuth(authController.validateToken)
+);
+
+// Email verification routes
+router.get('/verify-email/:token', authController.verifyEmail as RequestHandler);
+router.post('/resend-verification',
+  authMiddleware as RequestHandler,
+  handleAuth(authController.resendVerification)
+);
+router.get('/check-verification',
+  authMiddleware as RequestHandler,
+  handleAuth(authController.checkVerification)
+);
+
+// OAuth routes
+router.post('/google', async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body as { token?: string };
+    if (!token) {
+      return res.status(400).json({ error: 'Token is required' });
+    }
+    
+    return await authController.googleAuth(req, res);
+  } catch (error) {
+    console.error('Google auth error:', error);
+    return res.status(401).json({ error: 'Invalid OAuth token' });
+  }
+});
+
+router.post('/facebook', async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body as { token?: string };
+    if (!token) {
+      return res.status(400).json({ error: 'Token is required' });
+    }
+
+    return await authController.facebookAuth(req, res);
+  } catch (error) {
+    console.error('Facebook auth error:', error);
+    return res.status(401).json({ error: 'Invalid OAuth token' });
+  }
+});
+
+// Password reset routes
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password/:token', validatePassword, authController.resetPassword);
 
 export default router; 
