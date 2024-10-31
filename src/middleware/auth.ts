@@ -1,10 +1,10 @@
-import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt';
 import { User } from '../models/user.model';
-import { AuthRequest, AuthUser } from '../types/auth';
+import { AuthRequest } from '../types/auth';
 
-export const authMiddleware: RequestHandler = async (
-  req: Request,
+export const authMiddleware = async (
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -22,10 +22,11 @@ export const authMiddleware: RequestHandler = async (
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    (req as AuthRequest).user = {
+    req.user = {
       id: user.id,
       email: user.email,
-      name: user.name
+      name: user.name,
+      email_verified: user.email_verified
     };
 
     return next();

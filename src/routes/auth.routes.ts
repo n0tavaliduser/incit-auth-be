@@ -1,4 +1,4 @@
-import express, { Request, Response, RequestHandler } from 'express';
+import express, { Request, Response, NextFunction, RequestHandler } from 'express';
 import { AuthController } from '../controllers/auth.controller';
 import { authMiddleware } from '../middleware/auth';
 import { validatePassword } from '../middleware/passwordValidation';
@@ -7,23 +7,39 @@ import { AuthRequest } from '../types/auth';
 const router = express.Router();
 const authController = new AuthController();
 
-// Type assertion helper
-const handleAuth = (fn: (req: AuthRequest, res: Response) => Promise<any>): RequestHandler => 
-  (req, res, next) => {
-    const authReq = req as AuthRequest;
-    return fn(authReq, res).catch(next);
+// Updated type assertion helper
+const handleAuth = (
+  fn: (req: AuthRequest, res: Response) => Promise<any>
+): RequestHandler => 
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Explicitly cast the request to include user property
+      const authReq = req as unknown as AuthRequest;
+      await fn(authReq, res);
+    } catch (error) {
+      next(error);
+    }
   };
 
 // Basic auth routes
-router.post('/register', validatePassword, authController.register);
-router.post('/login', authController.login);
-router.post('/logout', authController.logout);
-router.get('/validate', authMiddleware, handleAuth(authController.validateToken));
+router.post('/register', validatePassword, authController.register as RequestHandler);
+router.post('/login', authController.login as RequestHandler);
+router.post('/logout', authController.logout as RequestHandler);
+router.get('/validate', 
+  authMiddleware as RequestHandler,
+  handleAuth(authController.validateToken)
+);
 
 // Email verification routes
-router.get('/verify-email/:token', authController.verifyEmail);
-router.post('/resend-verification', authMiddleware, handleAuth(authController.resendVerification));
-router.get('/check-verification', authMiddleware, handleAuth(authController.checkVerification));
+router.get('/verify-email/:token', authController.verifyEmail as RequestHandler);
+router.post('/resend-verification',
+  authMiddleware as RequestHandler,
+  handleAuth(authController.resendVerification)
+);
+router.get('/check-verification',
+  authMiddleware as RequestHandler,
+  handleAuth(authController.checkVerification)
+);
 
 // OAuth routes
 router.post('/google', async (req: Request, res: Response) => {

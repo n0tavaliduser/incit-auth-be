@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth';
+import { AuthRequest } from '../types/auth';
 import moment from 'moment-timezone';
 
 export const getDashboardData = async (req: AuthRequest, res: Response) => {
@@ -19,7 +19,7 @@ export const getDashboardData = async (req: AuthRequest, res: Response) => {
     }
 
     const userData = {
-      name: req.user.name,
+      name: req.user?.name,
       greeting: greeting,
       timestamp: moment().tz(timezone).format('YYYY-MM-DD HH:mm:ss')
     };
