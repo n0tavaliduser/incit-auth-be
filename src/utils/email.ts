@@ -4,11 +4,14 @@ import { config } from '../config';
 const transporter = nodemailer.createTransport({
   host: config.email.host,
   port: config.email.port,
-  secure: config.email.secure,
+  secure: false,
   auth: {
     user: config.email.user,
     pass: config.email.password,
   },
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
 export const sendVerificationEmail = async (email: string, token: string) => {
@@ -25,5 +28,12 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent:', info.response);
+    return info;
+  } catch (error) {
+    console.error('Error sending email:', error);
+    throw error;
+  }
 }; 
