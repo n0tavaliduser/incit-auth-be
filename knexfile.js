@@ -11,11 +11,11 @@ module.exports = {
       port: process.env.DB_PORT || 3306
     },
     migrations: {
-      directory: './database/migrations',
+      directory: './src/database/migrations',
       extension: 'js'
     },
     seeds: {
-      directory: './database/seeders',
+      directory: './src/database/seeders',
       extension: 'js'
     }
   },
@@ -23,11 +23,11 @@ module.exports = {
     client: 'mysql2',
     connection: process.env.DATABASE_URL,
     migrations: {
-      directory: './database/migrations',
+      directory: './src/database/migrations',
       extension: 'js'
     },
     seeds: {
-      directory: './database/seeders',
+      directory: './src/database/seeders',
       extension: 'js'
     }
   }
