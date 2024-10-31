@@ -2,8 +2,11 @@ exports.up = function(knex) {
   return knex.schema.createTable('users', table => {
     table.increments('id').primary();
     table.string('email', 255).unique().notNullable();
+    table.string('picture', 255).nullable();
     table.string('password', 255).nullable();
     table.string('name', 255).notNullable();
+    table.string('provider', 50).nullable();
+    table.string('provider_id', 255).nullable();
     table.string('oauth_provider', 50).nullable();
     table.string('oauth_id', 255).nullable();
     table.boolean('email_verified').notNullable().defaultTo(false);
