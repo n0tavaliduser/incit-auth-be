@@ -1,46 +1,44 @@
-import express from 'express';
+import express, { Express } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import authRoutes from './routes/auth';
-import dashboardRoutes from './routes/dashboard';
+import { config } from './config';
+import authRoutes from './routes/auth.routes';
+import { sequelize } from './config/database';
 
-dotenv.config();
-
-const app = express();
-const port = process.env.PORT || 3001;
-
-// CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+const app: Express = express();
 
 // Middleware
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check
-app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
-
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/dashboard', dashboardRoutes);
+app.use('/auth', authRoutes);
 
-// Error handling middleware
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({ 
-    success: false,
-    message: 'Internal server error' 
-  });
-});
+// Database connection and server start
+const PORT = config.port || 3001;
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+async function startServer() {
+  try {
+    await sequelize.authenticate();
+    console.log('Database connection has been established successfully.');
+    
+    // Force sync in development only
+    if (process.env.NODE_ENV === 'development') {
+      await sequelize.sync({ alter: true });
+      console.log('Database synchronized with alter');
+    } else {
+      await sequelize.sync();
+      console.log('Database synchronized');
+    }
 
-export default app; 
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Unable to start server:', error);
+  }
+}
+
+startServer();
+
+export default app;

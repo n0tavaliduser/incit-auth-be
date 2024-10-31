@@ -1,30 +1,35 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { verifyToken } from '../utils/jwt';
+import { User } from '../models/user.model';
+import { AuthRequest, AuthUser } from '../types/auth';
 
-export interface AuthRequest extends Request {
-  user?: any;
-}
-
-export const authMiddleware = async (
-  req: AuthRequest,
+export const authMiddleware: RequestHandler = async (
+  req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    
-    if (!token) {
-      res.status(401).json({ message: 'Authentication required' });
-      return;
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    req.user = decoded;
-    
-    next();
-    return;
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyToken(token);
+
+    const user = await User.findOne({ where: { id: decoded.id } });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    (req as AuthRequest).user = {
+      id: user.id,
+      email: user.email,
+      name: user.name
+    };
+
+    return next();
   } catch (error) {
-    res.status(401).json({ message: 'Invalid or expired token' });
-    return;
+    return res.status(401).json({ error: 'Invalid token' });
   }
 }; 
