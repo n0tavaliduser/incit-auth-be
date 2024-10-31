@@ -7,12 +7,13 @@ import { sequelize } from './config/database';
 
 const app = express();
 
-// CORS configuration
+// Update CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Frontend URL
-  credentials: true, // Allow credentials
+  origin: ['http://localhost:5173', 'https://accounts.google.com'],
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With']
 }));
 
 // Middleware
