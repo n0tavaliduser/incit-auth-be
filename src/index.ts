@@ -3,6 +3,7 @@ import cors from 'cors';
 import { config } from './config';
 import authRoutes from './routes/auth.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import profileRoutes from './routes/profile.routes';
 import { sequelize } from './config/database';
 
 const app = express();
@@ -22,6 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
 // Database connection and server start
