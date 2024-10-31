@@ -59,6 +59,10 @@ export class AuthController {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
 
+      if (user.provider !== 'local' && req.body.provider !== user.provider) {
+        return res.status(401).json({ error: 'Invalid login method' });
+      }
+
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ error: 'Invalid credentials' });
