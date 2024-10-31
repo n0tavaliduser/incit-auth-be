@@ -10,7 +10,7 @@ export const authMiddleware = async (
 ) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'No token provided' });
     }
 
@@ -19,18 +19,20 @@ export const authMiddleware = async (
 
     const user = await User.findOne({ where: { id: decoded.id } });
     if (!user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'User not found' });
     }
 
     req.user = {
       id: user.id,
-      email: user.email,
       name: user.name,
-      email_verified: user.email_verified
+      email: user.email,
+      email_verified: user.email_verified,
+      provider: user.provider
     };
 
-    return next();
+    next();
   } catch (error) {
+    console.error('Auth middleware error:', error);
     return res.status(401).json({ error: 'Invalid token' });
   }
 }; 

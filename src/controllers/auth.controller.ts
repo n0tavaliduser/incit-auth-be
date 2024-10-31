@@ -9,6 +9,7 @@ import bcrypt from 'bcrypt';
 import { AuthRequest } from '../types/auth';
 import crypto from 'crypto';
 import { Op } from 'sequelize';
+import { AuthLog, AuthLogCreationAttributes } from '../models/auth-log.model';
 
 export class AuthController {
   async register(req: Request, res: Response) {
@@ -70,6 +71,11 @@ export class AuthController {
       
       const token = generateToken(user);
       
+      await AuthLog.create({
+        user_id: user.id,
+        action: 'login'
+      } satisfies AuthLogCreationAttributes);
+      
       return res.json({ 
         token, 
         user: {
@@ -82,16 +88,24 @@ export class AuthController {
       });
     } catch (error) {
       console.error('Login error:', error);
-      return res.status(500).json({ error: 'Authentication failed' });
+      return res.status(500).json({ error: 'Login failed' });
     }
   }
 
-  async logout(req: Request, res: Response) {
+  async logout(req: AuthRequest, res: Response) {
     try {
+      const userId = req.user?.id;
+      if (userId) {
+        await AuthLog.create({
+          user_id: userId,
+          action: 'logout'
+        } satisfies AuthLogCreationAttributes);
+      }
+
       return res.json({ message: 'Logged out successfully' });
     } catch (error) {
       console.error('Logout error:', error);
-      return res.status(500).json({ error: 'Logout failed' });
+      return res.status(500).json({ error: 'Failed to logout' });
     }
   }
 
@@ -134,6 +148,11 @@ export class AuthController {
       }
 
       const jwtToken = generateToken(user);
+
+      await AuthLog.create({
+        user_id: user.id,
+        action: 'login'
+      } satisfies AuthLogCreationAttributes);
 
       return res.json({
         token: jwtToken,
@@ -179,16 +198,14 @@ export class AuthController {
           provider: 'facebook',
           providerId
         });
-      } else if (user.provider === 'local' && !user.email_verified) {
-        await user.update({
-          email_verified: true,
-          provider: 'facebook',
-          providerId,
-          picture: picture?.data?.url || user.picture
-        });
       }
 
       const jwtToken = generateToken(user);
+
+      await AuthLog.create({
+        user_id: user.id,
+        action: 'login'
+      } satisfies AuthLogCreationAttributes);
 
       return res.json({
         token: jwtToken,
