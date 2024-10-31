@@ -9,16 +9,19 @@ import { sequelize } from './config/database';
 
 const app = express();
 
-// Update CORS configuration
+const corsOrigins = process.env.CORS_ORIGIN?.split(',') || [
+  'https://incit-auth-fe.vercel.app',
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://accounts.google.com'],
-  credentials: true,
+  origin: corsOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Content-Length', 'X-Requested-With']
+  credentials: true
 }));
 
-// Middleware
+// Make sure these come after CORS configuration
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
