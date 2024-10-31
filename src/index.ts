@@ -10,7 +10,7 @@ import { sequelize } from './config/database';
 const app = express();
 
 const corsOrigins = process.env.CORS_ORIGIN?.split(',') || [
-  'https://incit-auth-fe.vercel.app',
+  'https://incit-auth-dc1m2wc6w-n0tavalidusers-projects.vercel.app',
   'http://localhost:3000'
 ];
 
