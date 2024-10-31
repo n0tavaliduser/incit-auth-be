@@ -145,7 +145,54 @@ export class AuthController {
 
   async facebookAuth(req: Request, res: Response) {
     try {
-      return res.status(501).json({ error: 'Facebook authentication not implemented yet' });
+      const { token } = req.body;
+      
+      // Verify token and get user info from Facebook
+      const response = await axios.get('https://graph.facebook.com/me', {
+        params: {
+          fields: 'id,name,email,picture',
+          access_token: token
+        }
+      });
+
+      const { id: providerId, name, email, picture } = response.data;
+      if (!email) {
+        return res.status(400).json({ error: 'Email not provided by Facebook' });
+      }
+
+      let user = await User.findOne({ where: { email } });
+      
+      if (!user) {
+        user = await User.create({
+          name,
+          email,
+          picture: picture?.data?.url || '',
+          email_verified: true,
+          provider: 'facebook',
+          providerId
+        });
+      } else if (user.provider === 'local' && !user.email_verified) {
+        await user.update({
+          email_verified: true,
+          provider: 'facebook',
+          providerId,
+          picture: picture?.data?.url || user.picture
+        });
+      }
+
+      const jwtToken = generateToken(user);
+
+      return res.json({
+        token: jwtToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          picture: user.picture,
+          email_verified: user.email_verified
+        }
+      });
+
     } catch (error) {
       console.error('Facebook auth error:', error);
       return res.status(500).json({ error: 'Authentication failed' });
