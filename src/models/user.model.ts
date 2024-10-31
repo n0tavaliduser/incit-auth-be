@@ -12,6 +12,8 @@ export interface UserAttributes {
   providerId?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  resetToken?: string;
+  resetTokenExpiresAt?: Date;
 }
 
 interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
@@ -27,6 +29,8 @@ export class User extends Model<UserAttributes, UserCreationAttributes> {
   public providerId!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
+  public resetToken?: string;
+  public resetTokenExpiresAt?: Date;
 }
 
 User.init(
@@ -66,6 +70,14 @@ User.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    resetToken: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    resetTokenExpiresAt: {
+      type: DataTypes.DATE,
+      allowNull: true
+    }
   },
   {
     sequelize,

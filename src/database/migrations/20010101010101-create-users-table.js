@@ -4,6 +4,8 @@ exports.up = function(knex) {
     table.string('email', 255).unique().notNullable();
     table.longtext('picture').nullable();
     table.string('password', 255).nullable();
+    table.string('reset_token', 255).nullable();
+    table.timestamp('reset_token_expires_at').nullable();
     table.string('name', 255).notNullable();
     table.string('provider', 50).nullable();
     table.string('provider_id', 255).nullable();

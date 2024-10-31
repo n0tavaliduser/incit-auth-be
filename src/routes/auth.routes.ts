@@ -70,4 +70,8 @@ router.post('/facebook', async (req: Request, res: Response) => {
   }
 });
 
+// Add these routes
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password/:token', validatePassword, authController.resetPassword);
+
 export default router; 

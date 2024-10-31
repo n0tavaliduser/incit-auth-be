@@ -4,9 +4,11 @@ import axios from 'axios';
 import { config } from '../config';
 import { User } from '../models/user.model';
 import { generateToken, verifyToken } from '../utils/jwt';
-import { sendVerificationEmail } from '../utils/email';
+import { sendVerificationEmail, sendResetPasswordEmail } from '../utils/email';
 import bcrypt from 'bcrypt';
 import { AuthRequest } from '../types/auth';
+import crypto from 'crypto';
+import { Op } from 'sequelize';
 
 export class AuthController {
   async register(req: Request, res: Response) {
@@ -277,4 +279,69 @@ export class AuthController {
       return res.status(500).json({ error: 'Failed to check verification status' });
     }
   };
+
+  async forgotPassword(req: Request, res: Response) {
+    try {
+      const { email } = req.body;
+
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        // Return success even if user not found for security
+        return res.json({ message: 'If an account exists, a reset link will be sent to your email' });
+      }
+
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
+
+      // Save reset token to user
+      await user.update({
+        resetToken,
+        resetTokenExpiresAt: resetTokenExpiry
+      });
+
+      // Send reset email
+      await sendResetPasswordEmail(email, resetToken);
+
+      return res.json({ message: 'If an account exists, a reset link will be sent to your email' });
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      return res.status(500).json({ error: 'Failed to process request' });
+    }
+  }
+
+  async resetPassword(req: Request, res: Response) {
+    try {
+      const { token } = req.params;
+      const { password } = req.body;
+
+      const user = await User.findOne({
+        where: {
+          resetToken: token,
+          resetTokenExpiresAt: {
+            [Op.gt]: new Date()
+          }
+        }
+      });
+
+      if (!user) {
+        return res.status(400).json({ error: 'Invalid or expired reset token' });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Update user
+      await user.update({
+        password: hashedPassword,
+        resetToken: '',
+        resetTokenExpiresAt: undefined
+      });
+
+      return res.json({ message: 'Password has been reset successfully' });
+    } catch (error) {
+      console.error('Reset password error:', error);
+      return res.status(500).json({ error: 'Failed to reset password' });
+    }
+  }
 } 
