@@ -22,6 +22,7 @@ exports.seed = async function(knex) {
         name: 'Admin User',
         email: 'admin@example.com',
         password: hashedPassword,
+        provider: 'local',
         email_verified: true,
         created_at: new Date(),
         updated_at: new Date()
@@ -30,6 +31,7 @@ exports.seed = async function(knex) {
         name: 'Test User',
         email: 'user@example.com',
         password: hashedPassword,
+        provider: 'local',
         email_verified: false,
         created_at: new Date(),
         updated_at: new Date()
