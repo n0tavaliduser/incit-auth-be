@@ -1,7 +1,5 @@
 import { Dialect, Sequelize } from 'sequelize';
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-
 // Konfigurasi dasar
 const config = {
   username: process.env.DB_USER || '',
