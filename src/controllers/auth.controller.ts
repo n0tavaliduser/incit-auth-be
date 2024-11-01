@@ -94,7 +94,7 @@ export class AuthController {
 
   async logout(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.body.userId;
       if (userId) {
         await AuthLog.create({
           user_id: userId,
